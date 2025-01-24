@@ -59,7 +59,13 @@ GEMINI_API_KEY="your-api-key-here"
 Then save it
 #### 4. Run AI CLI:
 ```bash
-python ai_cli.py
+python Gemini_Agent_Windows.py      # For Windows
+
+python Gemini_Agent_Linux.py        # For Linux
+
+python Gemini_Agent_MacOS.py        # MacOS
+
+
 ```
 
 ## 🏗️ How to Use AI CLI
