@@ -1,4 +1,3 @@
-```markdown
 # AI CLI: Your Personal AI-Powered Command Line Assistant
 
 ## 🚀 Introduction
