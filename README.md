@@ -30,8 +30,8 @@ Before you start, ensure you have:
 
 #### 1. Clone the Repository:
 ```bash
-git clone https://github.com/your-repo/ai-cli.git
-cd ai-cli
+git clone https://github.com/pkrRepo00/Ai-CLI.git
+cd Ai-CLI
 ```
 
 #### 2. Install Dependencies:
