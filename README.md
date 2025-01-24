@@ -106,3 +106,8 @@ Got ideas? Contribute to the project on GitHub!
 
 ## 🎉 Conclusion
 AI CLI is your AI-powered command-line assistant, making automation seamless and efficient. Whether you're managing files, checking system info, or scripting workflows, AI CLI empowers you to work smarter.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
