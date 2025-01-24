@@ -1,0 +1,138 @@
+Let's break down this script step-by-step, explaining what each part does, how it works, and what each component is for.
+
+---
+
+### **1. Import Libraries**
+```python
+import google.generativeai as genai
+import os
+import subprocess
+from dotenv import load_dotenv
+```
+- **`google.generativeai`**: This imports the Gemini AI module from Google, which is used to interact with the Gemini AI API. We use this to generate system commands based on user input.
+- **`os`**: This module allows interaction with the operating system, such as reading environment variables and managing system paths.
+- **`subprocess`**: This module enables you to spawn new processes, connect to their input/output/error pipes, and obtain their return codes. It's used here to run system commands.
+- **`dotenv`**: The `dotenv` library is used to load environment variables from a `.env` file. This is helpful for storing sensitive information like API keys securely.
+
+---
+
+### **2. Loading the API Key**
+```python
+load_dotenv()
+API_KEY = os.getenv("GEMINI_API_KEY")
+```
+- **`load_dotenv()`**: This function loads environment variables from a `.env` file into your environment, allowing you to access them using `os.getenv()`.
+- **`os.getenv("GEMINI_API_KEY")`**: This retrieves the API key stored in the `.env` file under the key `GEMINI_API_KEY`. This key is necessary to authenticate your requests to the Gemini API.
+
+---
+
+### **3. Initialize Gemini API**
+```python
+genai.configure(api_key=API_KEY)
+```
+- **`genai.configure(api_key=API_KEY)`**: This line initializes the Gemini AI service by passing in the API key that was loaded earlier. This ensures that the requests to the Gemini API are properly authenticated.
+
+---
+
+### **4. Defining Dangerous Commands to Block**
+```python
+BLOCKED_COMMANDS = [
+    "del /Q C:\\*", "rmdir /S /Q C:\\", "shutdown -s", "shutdown -r",
+    "format C:", "rm -rf /", "curl -O malware.exe", "wget http", "start malware.exe",
+    "diskpart", "bcdedit", "taskkill /F /IM", "net stop", "net user", "reg delete"
+]
+```
+- **`BLOCKED_COMMANDS`**: This is a list of potentially dangerous or harmful system commands that should be blocked from execution. These include commands that could delete files, shut down the system, or execute malicious scripts. The script will check any generated command against this list to ensure it's safe to execute.
+
+---
+
+### **5. Function to Get AI Command**
+```python
+def get_ai_command(user_input):
+    """Sends user input to Gemini API and retrieves a command"""
+    prompt = f"""
+    You are a command-line AI assistant. Generate a single valid Windows command.
+    STRICT RULES:
+    - Only return the command.
+    - No explanations or alternatives.
+    - Ensure it runs in cmd.exe.
+    
+    User: {user_input}
+    Command:
+    """
+    model = genai.GenerativeModel("gemini-pro")
+    response = model.generate_content(prompt)
+    
+    return response.text.strip() if response.text else "⚠ ERROR: No command generated"
+```
+- **`get_ai_command(user_input)`**: This function takes the user's input (natural language) and sends it to the Gemini AI model for processing. The model is instructed to generate a valid system command based on that input.
+    - **`prompt`**: This is the instruction given to the Gemini AI. It tells the AI to generate a **single valid Windows command** based on the user's input, and to follow specific rules like avoiding explanations.
+    - **`genai.GenerativeModel("gemini-pro")`**: This creates an instance of the AI model, specifying the type of model to use (`gemini-pro`).
+    - **`response = model.generate_content(prompt)`**: This line sends the prompt to the Gemini AI model, which generates a response (the command).
+    - **`response.text.strip()`**: This extracts the generated command from the response. If the command is empty or missing, an error message is returned.
+
+---
+
+### **6. Function to Check Safety of a Command**
+```python
+def is_safe_command(command):
+    """Checks if the command is safe to execute"""
+    for blocked in BLOCKED_COMMANDS:
+        if blocked.lower() in command.lower():
+            return False
+    return True
+```
+- **`is_safe_command(command)`**: This function checks if the generated command is safe to run by comparing it against the list of blocked commands (`BLOCKED_COMMANDS`).
+    - **`blocked.lower() in command.lower()`**: This ensures that the comparison is case-insensitive. If any of the blocked commands are found in the generated command, it returns `False` to indicate that the command is unsafe.
+
+---
+
+### **7. Function to Execute the Command**
+```python
+def execute_command(command):
+    """Executes a system command if it's safe"""
+    if not is_safe_command(command):
+        return "⚠ ERROR: Command blocked for safety!"
+
+    try:
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        return result.stdout if result.stdout else result.stderr
+    except Exception as e:
+        return str(e)
+```
+- **`execute_command(command)`**: This function attempts to execute the generated command if it passes the safety check.
+    - **`is_safe_command(command)`**: Before executing the command, it checks if the command is safe using the previously defined function.
+    - **`subprocess.run(command, shell=True, capture_output=True, text=True)`**: If the command is safe, it is executed using the `subprocess` module. This runs the command in a new shell process, captures the output (both `stdout` and `stderr`), and returns the output as a string.
+    - **`result.stdout if result.stdout else result.stderr`**: If the command produces output, it is returned. If there's an error (captured in `stderr`), that is returned instead.
+    - **`except Exception as e`**: If an error occurs during the command execution, the exception message is returned.
+
+---
+
+### **8. Main Loop to Interact with the User**
+```python
+print("🚀 Semi-Safe AI Assistant Started (Type 'exit' to quit)")
+while True:
+    user_input = input("\nUser: ")
+    
+    if user_input.lower() in ["exit", "quit"]:
+        print("Shutting down AI Assistant...")
+        break
+
+    ai_command = get_ai_command(user_input)
+    print(f"AI Generated Command: {ai_command}")
+
+    output = execute_command(ai_command)
+    print(f"Executing...\n{output}")
+```
+- **`while True:`**: This starts an infinite loop where the user can interact with the AI assistant.
+- **`user_input = input("\nUser: ")`**: The program prompts the user to input a command or query.
+- **`if user_input.lower() in ["exit", "quit"]:`**: If the user types "exit" or "quit", the loop ends and the assistant shuts down.
+- **`ai_command = get_ai_command(user_input)`**: The user input is sent to the `get_ai_command` function, which generates a system command.
+- **`print(f"AI Generated Command: {ai_command}")`**: The generated command is displayed to the user.
+- **`output = execute_command(ai_command)`**: The generated command is then executed using the `execute_command` function.
+- **`print(f"Executing...\n{output}")`**: The output of the executed command is displayed to the user.
+
+---
+
+### **Summary**
+This script is a command-line AI assistant that uses Google’s Gemini AI to generate system commands based on user input. It ensures that the generated commands are safe to execute, blocking dangerous commands, and provides the ability to execute the generated commands securely. It operates in a loop, continuously prompting the user for input and executing generated commands until the user decides to exit.
